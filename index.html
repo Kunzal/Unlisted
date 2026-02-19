@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UNLISTED INDIA — Pre-IPO Price Aggregator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════════════════════════ RESET & ROOT */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080B12;--surface:#0C1018;--panel:#101520;--card:#131822;
+  --card-h:#171D2A;--border:#1C2235;--border-hi:#252D42;
+  --buy:#22C55E;--sell:#F43F5E;--mid:#F0B429;
+  --text:#E2E8F0;--text-lo:#94A3B8;--dim:#6B7280;--muted:#374151;
+  --cat-preipo:#3B82F6;--cat-startup:#8B5CF6;--cat-mnc:#06B6D4;
+  --cat-sports:#10B981;--cat-dist:#EF4444;
+  --font-display:'Syne',sans-serif;--font-mono:'Syne Mono',monospace;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+input,select,button,textarea{font-family:var(--font-body)}
+::selection{background:#F0B42930;color:var(--mid)}
+
+/* ═══════════════════════════════════════════ ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}
+@keyframes barFill{from{width:0}}
+@keyframes modalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+
+/* ═══════════════════════════════════════════ LAYOUT */
+#app{min-height:100vh}
+.page{display:none}.page.active{display:block;animation:fadeIn .3s ease}
+
+/* ═══════════════════════════════════════════ NAV */
+.nav{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 32px;display:flex;align-items:center;justify-content:space-between;
+  height:60px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);
+}
+.nav-logo{display:flex;align-items:baseline;gap:8px;cursor:pointer}
+.nav-logo-main{font-family:var(--font-display);font-size:22px;font-weight:800;
+  color:var(--mid);letter-spacing:-1px}
+.nav-logo-sub{font-family:var(--font-display);font-size:22px;font-weight:400;
+  color:var(--text-lo);letter-spacing:-.5px}
+.nav-logo-tag{font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-left:4px}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-sources{display:flex;gap:12px;font-size:10px;color:var(--text-lo)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--buy);
+  display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 8px var(--buy)}
+.live-label{font-size:10px;color:var(--dim);letter-spacing:2px}
+.nav-btn{background:transparent;border:1px solid var(--border);color:var(--text-lo);
+  padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;transition:all .15s}
+.nav-btn:hover{border-color:var(--mid);color:var(--mid)}
+.nav-btn.primary{background:var(--mid);border-color:var(--mid);color:#000;font-weight:600}
+.nav-btn.primary:hover{background:#d4a200}
+
+/* ═══════════════════════════════════════════ TICKER */
+.ticker-wrap{background:var(--surface);border-bottom:1px solid var(--border);
+  overflow:hidden;padding:9px 0}
+.ticker-inner{display:flex;gap:56px;animation:ticker 60s linear infinite;width:max-content}
+.ticker-item{display:inline-flex;align-items:center;gap:10px;font-size:11px;
+  white-space:nowrap;font-family:var(--font-mono)}
+.ticker-dot{display:inline-block;width:6px;height:6px;border-radius:50%}
+.ticker-name{color:var(--text);font-weight:600;font-family:var(--font-body)}
+.ticker-buy{color:var(--buy)}.ticker-sep{color:var(--border)}.ticker-sell{color:var(--sell)}
+
+/* ═══════════════════════════════════════════ STATS */
+.stats-grid{padding:24px 32px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;animation:fadeUp .4s ease}
+.stat-label{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.stat-val{font-size:28px;font-family:var(--font-display);font-weight:800;letter-spacing:-1px}
+
+/* ═══════════════════════════════════════════ FILTERS */
+.category-bar{padding:16px 32px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cat-btn{background:transparent;border:1px solid var(--border);color:var(--dim);
+  padding:4px 12px;border-radius:99px;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:all .15s;font-family:var(--font-body)}
+.cat-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.legend{margin-left:auto;display:flex;gap:12px;font-size:10px;color:var(--dim)}
+.filters-bar{padding:12px 32px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;max-width:300px}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  font-size:13px;color:var(--muted);pointer-events:none}
+.field{background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:9px 14px;border-radius:8px;font-size:12px;outline:none;transition:border-color .15s}
+.field:focus{border-color:var(--mid)}
+.search-input{width:100%;padding-left:32px !important}
+select.field{-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+.results-count{margin-left:auto;font-size:11px;color:var(--dim)}
+
+/* ═══════════════════════════════════════════ TABLE */
+.table-header{padding:0 32px;display:grid;
+  grid-template-columns:minmax(200px,2fr) 130px 130px 130px 120px 160px 32px;
+  gap:0;margin-bottom:8px}
+.th{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;
+  padding:6px 8px;font-family:var(--font-body)}
+.companies-list{padding:0 32px 40px;display:flex;flex-direction:column;gap:6px}
+.empty-state{text-align:center;padding:80px 0;color:var(--muted);font-size:13px}
+
+/* ═══════════════════════════════════════════ COMPANY CARD */
+.company-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;transition:border-color .2s,background .2s}
+.company-card.expanded{background:var(--card-h)}
+.cat-accent{height:2px;background:transparent;transition:background .2s}
+.card-row{display:grid;grid-template-columns:minmax(200px,2fr) 130px 130px 130px 120px 160px 32px;
+  gap:0;padding:0 20px;align-items:center;cursor:pointer;min-height:72px;
+  background:transparent;transition:background .15s}
+.card-row:hover{background:var(--card-h)}
+.company-name-col{padding:14px 16px 14px 0}
+.company-name{font-size:15px;color:var(--text);font-weight:700;font-family:var(--font-display);letter-spacing:-.3px}
+.pill{display:inline-flex;align-items:center;white-space:nowrap;border-radius:99px;
+  font-weight:600;letter-spacing:.5px;font-family:var(--font-body)}
+.pill-xs{font-size:9px;padding:2px 7px}.pill-sm{font-size:10px;padding:3px 9px}
+.card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.card-meta-text{font-size:10px;color:var(--dim)}
+.card-meta-sep{font-size:10px;color:var(--border)}
+.price-cell{padding:14px 8px;border-left:1px solid #1C223530}
+.price-label{font-size:9px;color:var(--dim);letter-spacing:1.5px;margin-bottom:5px;text-transform:uppercase}
+.price-val{font-size:17px;font-family:var(--font-mono);font-weight:600;letter-spacing:-.5px}
+.price-sub{font-size:9px;color:var(--dim);margin-top:3px}
+.caret{display:flex;align-items:center;justify-content:center;font-size:16px;
+  color:var(--muted);transition:transform .2s,color .2s}
+.caret.open{transform:rotate(180deg)}
+
+/* ── BUY/SELL action cell ── */
+.action-cell{padding:14px 8px;border-left:1px solid #1C223530;display:flex;gap:6px}
+.action-btn{flex:1;padding:8px 4px;border-radius:8px;border:none;font-size:11px;
+  font-weight:700;cursor:pointer;letter-spacing:.5px;transition:all .15s;font-family:var(--font-body)}
+.btn-buy{background:#22C55E18;color:var(--buy);border:1px solid #22C55E35}
+.btn-buy:hover{background:#22C55E30;transform:translateY(-1px)}
+.btn-sell{background:#F43F5E18;color:var(--sell);border:1px solid #F43F5E35}
+.btn-sell:hover{background:#F43F5E30;transform:translateY(-1px)}
+
+/* ═══════════════════════════════════════════ EXPANDED DETAIL */
+.expanded-panel{border-top:1px solid var(--border);padding:24px;background:var(--panel);
+  animation:slideDown .25s cubic-bezier(.16,1,.3,1)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.anchor-box{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:20px;margin-bottom:16px}
+.section-label{font-size:10px;color:var(--dim);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:12px;font-family:var(--font-body)}
+.anchor-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;
+  background:var(--border);border-radius:8px;overflow:hidden}
+.anchor-cell{background:var(--card);padding:16px 12px;text-align:center}
+.anchor-cell-label{font-size:9px;color:var(--dim);margin-bottom:6px;
+  letter-spacing:1.5px;text-transform:uppercase}
+.anchor-cell-val{font-size:20px;font-family:var(--font-mono);font-weight:600;letter-spacing:-.5px}
+.anchor-cell-note{font-size:9px;color:var(--dim);margin-top:4px}
+.gradient-bar{height:8px;border-radius:99px;
+  background:linear-gradient(90deg,var(--buy),var(--mid),var(--sell));
+  opacity:.8;position:relative;margin-top:16px}
+.consensus-dot{position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:14px;height:14px;border-radius:50%;background:var(--mid);
+  border:3px solid var(--bg);box-shadow:0 0 10px #F0B42990}
+.bar-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);
+  margin-top:6px;font-family:var(--font-mono)}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meta-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.meta-key{font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:3px;text-transform:uppercase}
+.meta-val{font-size:12px;color:var(--text)}
+.peer-banner{margin-top:8px;border-radius:8px;padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between}
+.source-bars{display:flex;flex-direction:column;gap:8px}
+.source-row{margin-bottom:4px}
+.source-name{font-size:11px;display:flex;align-items:center;gap:5px}
+.source-prices{display:flex;gap:10px;font-size:11px;font-family:var(--font-mono)}
+.source-bar-track{position:relative;height:6px;background:#1C223580;border-radius:99px;margin-top:5px}
+.source-bar-fill{position:absolute;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,#22C55E70,#F43F5E70);animation:barFill .6s ease both}
+.source-marker{position:absolute;top:50%;transform:translateY(-50%);
+  width:8px;height:8px;border-radius:50%;border:1.5px solid var(--bg)}
+.about-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+.about-text{font-size:12px;color:var(--text-lo);line-height:1.75}
+.range-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+.range-bar-wrap{position:relative}
+.range-bar{height:4px;border-radius:99px;
+  background:linear-gradient(90deg,#F43F5E40,#F0B42940,#22C55E40)}
+.range-dot{position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:10px;height:10px;border-radius:50%;background:var(--mid);
+  border:2px solid var(--bg);box-shadow:0 0 6px #F0B42980}
+.range-labels{display:flex;justify-content:space-between;margin-top:5px;
+  font-size:9px;color:var(--dim);font-family:var(--font-mono)}
+
+/* ═══════════════════════════════════════════ MODAL */
+.modal-overlay{position:fixed;inset:0;background:#00000090;z-index:1000;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border-hi);border-radius:16px;
+  width:460px;max-width:calc(100vw - 40px);padding:32px;
+  animation:modalIn .25s cubic-bezier(.16,1,.3,1)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px}
+.modal-title{font-size:18px;font-family:var(--font-display);font-weight:700}
+.modal-subtitle{font-size:12px;color:var(--dim);margin-top:4px}
+.modal-close{background:transparent;border:none;color:var(--dim);font-size:20px;cursor:pointer;
+  padding:4px;line-height:1;transition:color .15s}
+.modal-close:hover{color:var(--text)}
+.modal-type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.type-btn{padding:12px;border-radius:10px;border:1px solid var(--border);cursor:pointer;
+  text-align:center;transition:all .2s;background:transparent}
+.type-btn.buy-active{background:#22C55E18;border-color:#22C55E60;color:var(--buy)}
+.type-btn.sell-active{background:#F43F5E18;border-color:#F43F5E60;color:var(--sell)}
+.type-btn:not(.buy-active):not(.sell-active){color:var(--dim)}
+.type-btn-label{font-size:14px;font-weight:700;margin-bottom:2px}
+.type-btn-sub{font-size:10px;opacity:.7}
+.form-group{margin-bottom:16px}
+.form-label{font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;
+  margin-bottom:6px;display:block}
+.form-input{width:100%;background:var(--card);border:1px solid var(--border);
+  color:var(--text);padding:10px 14px;border-radius:8px;font-size:13px;
+  outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--mid)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;
+  font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px;letter-spacing:.5px}
+.submit-buy{background:var(--buy);color:#000}
+.submit-buy:hover{background:#16a34a;transform:translateY(-1px)}
+.submit-sell{background:var(--sell);color:#fff}
+.submit-sell:hover{background:#e11d48;transform:translateY(-1px)}
+.modal-success{text-align:center;padding:20px 0}
+.success-icon{font-size:48px;margin-bottom:16px}
+.success-title{font-size:20px;font-family:var(--font-display);font-weight:700;color:var(--buy);margin-bottom:8px}
+.success-msg{font-size:13px;color:var(--text-lo);line-height:1.6}
+.price-hint{background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px;margin-bottom:20px}
+.price-hint-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.price-hint-label{color:var(--dim)}
+.price-hint-val{font-family:var(--font-mono);font-weight:600}
+
+/* ═══════════════════════════════════════════ ADMIN PAGE */
+.admin-page{padding:32px;max-width:1200px;margin:0 auto}
+.admin-header{margin-bottom:32px}
+.admin-title{font-size:28px;font-family:var(--font-display);font-weight:800;color:var(--text)}
+.admin-subtitle{font-size:13px;color:var(--dim);margin-top:4px}
+.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.admin-stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.admin-stat-val{font-size:32px;font-family:var(--font-display);font-weight:800;color:var(--mid)}
+.admin-stat-label{font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:1px;text-transform:uppercase}
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{background:var(--panel);padding:12px 16px;text-align:left;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);
+  border-bottom:1px solid var(--border)}
+.data-table td{padding:12px 16px;border-bottom:1px solid #1C223540;color:var(--text-lo)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#ffffff05}
+.status-badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:10px;font-weight:600}
+.status-pending{background:#F59E0B20;color:#F59E0B;border:1px solid #F59E0B40}
+.status-contacted{background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640}
+.status-closed{background:#22C55E20;color:#22C55E;border:1px solid #22C55E40}
+.action-select{background:var(--panel);border:1px solid var(--border);color:var(--text);
+  padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer}
+.tab-bar{display:flex;gap:4px;margin-bottom:24px;background:var(--card);
+  padding:4px;border-radius:10px;width:fit-content}
+.tab{padding:8px 20px;border-radius:8px;border:none;background:transparent;
+  color:var(--dim);font-size:13px;cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.tab.active{background:var(--panel);color:var(--text);font-weight:600}
+.section-title{font-size:13px;font-weight:600;color:var(--text-lo);margin-bottom:16px;
+  text-transform:uppercase;letter-spacing:2px;font-size:10px}
+.add-company-form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.add-company-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ═══════════════════════════════════════════ AUTH PAGE */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 30% 30%,#1a1f2e 0%,var(--bg) 70%)}
+.auth-card{background:var(--panel);border:1px solid var(--border-hi);border-radius:20px;
+  padding:40px;width:400px;max-width:calc(100vw - 40px)}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo-text{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--mid)}
+.auth-tagline{font-size:12px;color:var(--dim);margin-top:6px}
+.auth-title{font-size:20px;font-family:var(--font-display);font-weight:700;margin-bottom:4px}
+.auth-sub{font-size:13px;color:var(--dim);margin-bottom:24px}
+.auth-footer{text-align:center;margin-top:20px;font-size:12px;color:var(--dim)}
+.auth-link{color:var(--mid);cursor:pointer;background:none;border:none;font-size:12px;
+  text-decoration:underline;font-family:var(--font-body)}
+.error-msg{background:#EF444418;border:1px solid #EF444440;color:#FCA5A5;
+  padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:16px}
+
+/* ═══════════════════════════════════════════ DISCLAIMER */
+.disclaimer{margin-top:24px;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:14px 20px;font-size:11px;color:var(--muted);line-height:1.8}
+
+/* ═══════════════════════════════════════════ LOADING */
+.loading-wrap{display:flex;align-items:center;justify-content:center;padding:80px 0;gap:12px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--mid);
+  border-radius:50%;animation:spin 1s linear infinite}
+.loading-text{color:var(--dim);font-size:13px}
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--card-h) 50%,var(--card) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+
+/* ═══════════════════════════════════════════ TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--panel);border:1px solid var(--border-hi);border-radius:10px;
+  padding:14px 20px;font-size:13px;color:var(--text);animation:fadeUp .3s ease;
+  display:flex;align-items:center;gap:10px;min-width:280px}
+.toast.success{border-color:#22C55E50}.toast.error{border-color:#EF444450}
+
+/* ═══════════════════════════════════════════ RESPONSIVE */
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .table-header,.card-row{
+    grid-template-columns:minmax(160px,2fr) 110px 110px 120px 32px;
+  }
+  .th:nth-child(4),.price-cell:nth-child(5),
+  .th:nth-child(5),.price-cell:nth-child(6){display:none}
+  .detail-grid{grid-template-columns:1fr}
+  .nav-sources{display:none}
+}
+@media(max-width:600px){
+  .nav{padding:0 16px}
+  .stats-grid{grid-template-columns:1fr 1fr;padding:16px 16px 0}
+  .filters-bar,.category-bar,.companies-list,.table-header{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ TOAST CONTAINER ═══ -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: MAIN (Market)
+  ═══════════════════════════════════════ -->
+  <div class="page active" id="page-main">
+
+    <!-- NAV -->
+    <nav class="nav">
+      <div class="nav-logo" onclick="showPage('main')">
+        <span class="nav-logo-main">UNLISTED</span>
+        <span class="nav-logo-sub">INDIA</span>
+        <span class="nav-logo-tag">Price Aggregator</span>
+      </div>
+      <div class="nav-right">
+        <div class="nav-sources" id="navSources">
+          <span>Planify</span><span>SharesCart</span>
+          <span>Altius</span><span>WWIPL</span><span>UnlistedZone</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="live-dot"></span>
+          <span class="live-label">LIVE</span>
+        </div>
+        <button class="nav-btn" id="navAuthBtn" onclick="handleNavAuth()">Login</button>
+        <button class="nav-btn" id="navAdminBtn" onclick="showPage('admin')" style="display:none">Admin ›</button>
+      </div>
+    </nav>
+
+    <!-- TICKER -->
+    <div class="ticker-wrap"><div class="ticker-inner" id="ticker"></div></div>
+
+    <!-- STATS -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card skeleton" style="height:80px"></div>
+      <div class="stat-card skeleton" style="height:80px"></div>
+      <div class="stat-card skeleton" style="height:80px"></div>
+      <div class="stat-card skeleton" style="height:80px"></div>
+    </div>
+
+    <!-- CATEGORY FILTER -->
+    <div class="category-bar" id="categoryBar">
+      <button class="cat-btn active" data-cat="All" onclick="setCat('All')">All</button>
+      <button class="cat-btn" data-cat="Pre-IPO" onclick="setCat('Pre-IPO')">
+        <span class="cat-dot" style="background:#3B82F6"></span>Pre-IPO
+      </button>
+      <button class="cat-btn" data-cat="Startup" onclick="setCat('Startup')">
+        <span class="cat-dot" style="background:#8B5CF6"></span>Startup
+      </button>
+      <button class="cat-btn" data-cat="MNC Subsidiary" onclick="setCat('MNC Subsidiary')">
+        <span class="cat-dot" style="background:#06B6D4"></span>MNC Subsidiary
+      </button>
+      <button class="cat-btn" data-cat="Sports" onclick="setCat('Sports')">
+        <span class="cat-dot" style="background:#10B981"></span>Sports
+      </button>
+      <div class="legend">
+        <span style="color:var(--buy)">● Buy</span>
+        <span style="color:var(--mid)">● Consensus</span>
+        <span style="color:var(--sell)">● Sell</span>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input class="field search-input" id="searchInput" placeholder="Search company or sector…" oninput="onSearch()" />
+      </div>
+      <select class="field" id="sectorFilter" onchange="applyFilters()">
+        <option>All Sectors</option>
+      </select>
+      <select class="field" id="sortSelect" onchange="applyFilters()">
+        <option value="name">Sort: A–Z</option>
+        <option value="buy_asc">Price ↑</option>
+        <option value="buy_desc">Price ↓</option>
+        <option value="spread">Spread ↓</option>
+      </select>
+      <div class="results-count" id="resultsCount"></div>
+    </div>
+
+    <!-- TABLE HEADER -->
+    <div class="table-header">
+      <div class="th">Company</div>
+      <div class="th">Best Buy</div>
+      <div class="th">Best Sell</div>
+      <div class="th">Consensus</div>
+      <div class="th">vs Listed Peer</div>
+      <div class="th">OTC Deal</div>
+      <div class="th"></div>
+    </div>
+
+    <!-- COMPANIES LIST -->
+    <div class="companies-list" id="companiesList">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <span class="loading-text">Loading market data…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: AUTH
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-auth">
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="auth-logo-text">UNLISTED INDIA</div>
+          <div class="auth-tagline">Pre-IPO · Unlisted · Alternative Assets</div>
+        </div>
+        <div id="authForm">
+          <div class="auth-title" id="authTitle">Welcome back</div>
+          <div class="auth-sub" id="authSub">Sign in to access watchlist & alerts</div>
+          <div class="error-msg" id="authError" style="display:none"></div>
+          <div class="form-group" id="nameGroup" style="display:none">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" id="authName" placeholder="Your name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="authEmail" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" id="authPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitAuth()" />
+          </div>
+          <button class="submit-btn submit-buy" onclick="submitAuth()" id="authSubmitBtn">Sign In</button>
+          <div class="auth-footer">
+            <span id="authToggleText">Don't have an account? </span>
+            <button class="auth-link" onclick="toggleAuthMode()" id="authToggleBtn">Create account</button>
+          </div>
+          <div class="auth-footer" style="margin-top:12px">
+            <button class="auth-link" onclick="showPage('main')">← Back to market</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE: ADMIN
+  ═══════════════════════════════════════ -->
+  <div class="page" id="page-admin">
+    <nav class="nav">
+      <div class="nav-logo" onclick="showPage('main')">
+        <span class="nav-logo-main">UNLISTED</span>
+        <span class="nav-logo-sub">INDIA</span>
+        <span class="nav-logo-tag" style="color:#F43F5E">Admin</span>
+      </div>
+      <div class="nav-right">
+        <button class="nav-btn" onclick="showPage('main')">← Market</button>
+        <button class="nav-btn" onclick="logout()">Logout</button>
+      </div>
+    </nav>
+    <div class="admin-page">
+      <div class="admin-header">
+        <div class="admin-title">Admin Dashboard</div>
+        <div class="admin-subtitle">Manage companies, prices, and OTC inquiries</div>
+      </div>
+      <div class="admin-stats" id="adminStats">
+        <div class="admin-stat skeleton" style="height:90px"></div>
+        <div class="admin-stat skeleton" style="height:90px"></div>
+        <div class="admin-stat skeleton" style="height:90px"></div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab active" onclick="adminTab('inquiries',this)">OTC Inquiries</button>
+        <button class="tab" onclick="adminTab('companies',this)">Companies</button>
+        <button class="tab" onclick="adminTab('addCompany',this)">+ Add Company</button>
+      </div>
+
+      <!-- Inquiries tab -->
+      <div id="tab-inquiries">
+        <div class="section-title">OTC Buy/Sell Inquiries</div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th><th>Type</th><th>Company</th><th>Name</th>
+                <th>Phone</th><th>Qty</th><th>Target ₹</th><th>Status</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="inquiriesTable"><tr><td colspan="9" style="text-align:center;padding:40px;color:var(--dim)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Companies tab -->
+      <div id="tab-companies" style="display:none">
+        <div class="section-title">Listed Companies</div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Category</th><th>IPO Status</th><th>Best Buy</th><th>Best Sell</th><th>Consensus</th><th>Actions</th></tr></thead>
+            <tbody id="adminCompaniesTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add Company tab -->
+      <div id="tab-addCompany" style="display:none">
+        <div class="section-title">Add New Company</div>
+        <div class="add-company-form">
+          <div class="add-company-grid">
+            <div class="form-group"><label class="form-label">Short Name *</label><input class="form-input" id="ac-name" placeholder="NSE India" /></div>
+            <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="ac-fullName" placeholder="National Stock Exchange of India Ltd" /></div>
+            <div class="form-group"><label class="form-label">Sector *</label><input class="form-input" id="ac-sector" placeholder="Financial Infra" /></div>
+            <div class="form-group"><label class="form-label">Category *</label>
+              <select class="form-input" id="ac-category">
+                <option>Pre-IPO</option><option>Startup</option>
+                <option>MNC Subsidiary</option><option>Sports</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">IPO Status *</label>
+              <select class="form-input" id="ac-ipoStatus">
+                <option>Filed DRHP</option><option>SEBI Approved</option>
+                <option>IPO Expected 2026</option><option>SEBI Lapsed</option>
+                <option>DRHP Filed</option><option>IPO Planned</option>
+                <option>No IPO</option><option>Rumoured</option><option>Exploring</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">ISIN</label><input class="form-input" id="ac-isin" placeholder="INE742F01042" /></div>
+            <div class="form-group"><label class="form-label">Face Value (₹)</label><input class="form-input" id="ac-faceValue" type="number" value="10" /></div>
+            <div class="form-group"><label class="form-label">Lot Size</label><input class="form-input" id="ac-lotSize" type="number" value="50" /></div>
+            <div class="form-group"><label class="form-label">52W High</label><input class="form-input" id="ac-hi52" type="number" /></div>
+            <div class="form-group"><label class="form-label">52W Low</label><input class="form-input" id="ac-lo52" type="number" /></div>
+            <div class="form-group"><label class="form-label">Listed Peer</label><input class="form-input" id="ac-peer" placeholder="BSE Ltd" /></div>
+            <div class="form-group"><label class="form-label">Peer Ticker</label><input class="form-input" id="ac-peerTick" placeholder="BSE" /></div>
+            <div class="form-group"><label class="form-label">Peer Price (₹)</label><input class="form-input" id="ac-peerPx" type="number" /></div>
+          </div>
+          <div class="form-group" style="margin-top:8px">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="ac-desc" rows="3" style="resize:vertical"></textarea>
+          </div>
+          <div class="form-group" style="margin-top:16px">
+            <div class="section-label" style="margin-bottom:12px">Broker Prices (Buy / Sell)</div>
+            <div id="ac-sources">
+              <!-- Broker rows auto-generated -->
+            </div>
+          </div>
+          <button class="submit-btn submit-buy" style="max-width:200px" onclick="submitAddCompany()">Add Company</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       OTC INQUIRY MODAL
+  ═══════════════════════════════════════ -->
+  <div class="modal-overlay" id="inquiryModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const API = window.location.origin + '/api/v1';
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let companies = [];
+let filteredCompanies = [];
+let expandedId = null;
+let authMode = 'login'; // 'login' | 'register'
+let token = localStorage.getItem('ui_token');
+let currentUser = JSON.parse(localStorage.getItem('ui_user') || 'null');
+let activeCat = 'All';
+let searchDebounce;
+
+// ═══════════════════════════════════════════════════════════════
+// CATEGORY COLORS
+// ═══════════════════════════════════════════════════════════════
+const CAT_COLORS = {
+  'Pre-IPO':        '#3B82F6',
+  'Startup':        '#8B5CF6',
+  'MNC Subsidiary': '#06B6D4',
+  'Sports':         '#10B981',
+  'Distressed':     '#EF4444',
+};
+const IPO_COLORS = {
+  'Filed DRHP':'#F59E0B','SEBI Approved':'#10B981','IPO Expected 2026':'#3B82F6',
+  'SEBI Lapsed':'#EF4444','DRHP Filed':'#F59E0B','IPO Planned':'#8B5CF6',
+  'No IPO':'#4B5563','Rumoured':'#A78BFA','Exploring':'#6B7280',
+};
+
+// ═══════════════════════════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════════════════════════
+async function apiGet(path) {
+  const r = await fetch(API + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  return r.json();
+}
+async function apiPost(path, body) {
+  const r = await fetch(API + path, {
+    method: 'POST', headers: { 'Content-Type':'application/json', ...(token?{Authorization:`Bearer ${token}`}:{}) },
+    body: JSON.stringify(body),
+  });
+  return r.json();
+}
+async function apiPatch(path, body) {
+  const r = await fetch(API + path, {
+    method: 'PATCH', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  return r.json();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, type='success') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='success'?'✓':'✕'}</span> ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE ROUTING
+// ═══════════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  window.scrollTo(0,0);
+  if (name === 'admin') loadAdminData();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════════
+const fmtINR = n => n != null ? Number(n).toLocaleString('en-IN') : '—';
+const fmtPct = n => n != null ? (n > 0 ? '+' : '') + n.toFixed(1) + '%' : '—';
+
+function pill(label, color, size='xs') {
+  return `<span class="pill pill-${size}" style="background:${color}20;color:${color};border:1px solid ${color}35">${label}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOAD MARKET DATA
+// ═══════════════════════════════════════════════════════════════
+async function loadMarket() {
+  try {
+    const [compRes, statRes] = await Promise.all([
+      apiGet('/companies'),
+      apiGet('/companies/stats'),
+    ]);
+    companies = compRes.data || [];
+    renderStats(statRes.data || {});
+    populateSectors();
+    applyFilters();
+    renderTicker();
+  } catch(e) {
+    document.getElementById('companiesList').innerHTML =
+      `<div class="empty-state">⚠ Could not connect to API. Is the server running?</div>`;
+  }
+}
+
+function renderStats(stats) {
+  const by = stats.byCategory || {};
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card" style="animation-delay:.02s">
+      <div class="stat-label">Companies</div>
+      <div class="stat-val" style="color:var(--mid)">${stats.total || 0}</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.05s">
+      <div class="stat-label">Pre-IPO</div>
+      <div class="stat-val" style="color:#3B82F6">${by['Pre-IPO'] || 0}</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.08s">
+      <div class="stat-label">Startups</div>
+      <div class="stat-val" style="color:#8B5CF6">${by['Startup'] || 0}</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.11s">
+      <div class="stat-label">Price Sources</div>
+      <div class="stat-val" style="color:var(--buy)">${stats.priceSources || 5}</div>
+    </div>
+  `;
+}
+
+function populateSectors() {
+  const sectors = ['All Sectors', ...new Set(companies.map(c => c.sector)).values()].sort();
+  const sel = document.getElementById('sectorFilter');
+  sel.innerHTML = sectors.map(s => `<option>${s}</option>`).join('');
+}
+
+function renderTicker() {
+  const items = [...companies, ...companies];
+  document.getElementById('ticker').innerHTML = items.map(c => {
+    const p = c.computed || {};
+    const color = CAT_COLORS[c.category] || '#6B7280';
+    return `<span class="ticker-item">
+      <span class="ticker-dot" style="background:${color}"></span>
+      <span class="ticker-name">${c.name}</span>
+      <span class="ticker-buy">B ₹${fmtINR(p.bestBuy)}</span>
+      <span class="ticker-sep">╱</span>
+      <span class="ticker-sell">S ₹${fmtINR(p.bestSell)}</span>
+    </span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════
+function setCat(cat) {
+  activeCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    const active = b.dataset.cat === cat;
+    const color = CAT_COLORS[b.dataset.cat];
+    b.style.background = active && color ? color + '15' : 'transparent';
+    b.style.borderColor = active && color ? color : 'var(--border)';
+    b.style.color       = active && color ? color : 'var(--dim)';
+    if (b.dataset.cat === 'All') {
+      b.style.background = cat === 'All' ? 'var(--mid)15' : 'transparent';
+      b.style.borderColor = cat === 'All' ? 'var(--mid)' : 'var(--border)';
+      b.style.color       = cat === 'All' ? 'var(--mid)' : 'var(--dim)';
+    }
+  });
+  applyFilters();
+}
+
+function onSearch() {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(applyFilters, 250);
+}
+
+function applyFilters() {
+  const search  = document.getElementById('searchInput').value.toLowerCase();
+  const sector  = document.getElementById('sectorFilter').value;
+  const sort    = document.getElementById('sortSelect').value;
+
+  let list = [...companies];
+  if (activeCat !== 'All')           list = list.filter(c => c.category === activeCat);
+  if (sector !== 'All Sectors')      list = list.filter(c => c.sector === sector);
+  if (search)                        list = list.filter(c =>
+    (c.name+c.fullName+c.sector+c.desc).toLowerCase().includes(search));
+
+  if (sort === 'name')      list.sort((a,b) => a.name.localeCompare(b.name));
+  if (sort === 'buy_asc')   list.sort((a,b) => (a.computed?.bestBuy||0) - (b.computed?.bestBuy||0));
+  if (sort === 'buy_desc')  list.sort((a,b) => (b.computed?.bestBuy||0) - (a.computed?.bestBuy||0));
+  if (sort === 'spread')    list.sort((a,b) => (b.computed?.spread||0) - (a.computed?.spread||0));
+
+  filteredCompanies = list;
+  document.getElementById('resultsCount').innerHTML =
+    `<span style="color:var(--text)">${list.length}</span> / ${companies.length} companies`;
+  renderCompanies();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER COMPANIES
+// ═══════════════════════════════════════════════════════════════
+function renderCompanies() {
+  const list = document.getElementById('companiesList');
+  if (!filteredCompanies.length) {
+    list.innerHTML = `<div class="empty-state">No companies found. Try adjusting your filters.</div>`;
+    return;
+  }
+  list.innerHTML = filteredCompanies.map((c, i) => renderCompanyCard(c, i)).join('');
+}
+
+function renderCompanyCard(c, i) {
+  const p       = c.computed || {};
+  const catColor = CAT_COLORS[c.category] || '#6B7280';
+  const ipoColor = IPO_COLORS[c.ipoStatus] || '#6B7280';
+  const isExp    = expandedId === c._id;
+  const peer     = p.peer || {};
+  const discountPct = peer.pct != null ? peer.pct : null;
+
+  return `<div class="company-card ${isExp?'expanded':''}" id="card-${c._id}" style="animation-delay:${i*0.03}s;animation:fadeUp 0.4s cubic-bezier(.16,1,.3,1) ${i*0.03}s both;${isExp?`border-color:${catColor}50;box-shadow:0 4px 32px ${catColor}15`:''}" >
+    <div class="cat-accent" style="background:${isExp?catColor:'transparent'}"></div>
+    <div class="card-row" onclick="toggleExpand('${c._id}')">
+      <!-- Company info -->
+      <div class="company-name-col">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span class="company-name">${c.name}</span>
+          ${pill(c.category, catColor)}
+        </div>
+        <div class="card-meta">
+          <span class="card-meta-text">${c.sector}</span>
+          <span class="card-meta-sep">·</span>
+          <span class="card-meta-text">Lot ${c.lotSize}</span>
+          <span class="card-meta-sep">·</span>
+          ${pill(c.ipoStatus, ipoColor)}
+        </div>
+      </div>
+      <!-- Best Buy -->
+      <div class="price-cell">
+        <div class="price-label">Best Buy</div>
+        <div class="price-val" style="color:var(--buy)">₹${fmtINR(p.bestBuy)}</div>
+        <div class="price-sub">${p.bestBuySource || ''}</div>
+      </div>
+      <!-- Best Sell -->
+      <div class="price-cell">
+        <div class="price-label">Best Sell</div>
+        <div class="price-val" style="color:var(--sell)">₹${fmtINR(p.bestSell)}</div>
+        <div class="price-sub">${p.bestSellSource || ''}</div>
+      </div>
+      <!-- Consensus -->
+      <div class="price-cell">
+        <div class="price-label">Consensus</div>
+        <div class="price-val" style="color:var(--mid)">₹${fmtINR(p.midConsensus)}</div>
+        <div class="price-sub">${p.spread != null ? p.spread+'% spread' : ''}</div>
+      </div>
+      <!-- vs Peer -->
+      <div class="price-cell">
+        <div class="price-label">vs Peer</div>
+        ${discountPct != null ? `
+          <div class="price-val" style="font-size:14px;color:${discountPct<0?'var(--buy)':'var(--sell)'}">
+            ${discountPct<0?'▼':'▲'} ${Math.abs(discountPct).toFixed(1)}%
+          </div>
+          <div class="price-sub">${discountPct<0?'discount':'premium'}</div>
+        ` : `<div style="font-size:13px;color:var(--muted)">—</div>`}
+      </div>
+      <!-- OTC Actions -->
+      <div class="action-cell">
+        <button class="action-btn btn-buy" onclick="event.stopPropagation();openInquiry('${c._id}','${c.name}','buy',${p.bestBuy||0},${p.bestSell||0},${p.midConsensus||0})">
+          ▲ BUY
+        </button>
+        <button class="action-btn btn-sell" onclick="event.stopPropagation();openInquiry('${c._id}','${c.name}','sell',${p.bestBuy||0},${p.bestSell||0},${p.midConsensus||0})">
+          ▼ SELL
+        </button>
+      </div>
+      <!-- Caret -->
+      <div class="caret ${isExp?'open'}" style="color:${isExp?catColor:'var(--muted)'}">⌄</div>
+    </div>
+    ${isExp ? renderExpandedPanel(c) : ''}
+  </div>`;
+}
+
+function renderExpandedPanel(c) {
+  const p = c.computed || {};
+  const peer = p.peer || {};
+  const buys  = (c.sources||[]).map(s=>s.b);
+  const sells = (c.sources||[]).map(s=>s.s);
+  const mn = Math.min(...buys), mx = Math.max(...sells);
+  const conPos = mx > mn ? ((p.midConsensus - mn) / (mx - mn) * 100).toFixed(1) : 50;
+  const rangePos = (c.hi52 > c.lo52) ? ((p.midConsensus - c.lo52) / (c.hi52 - c.lo52) * 100).toFixed(1) : 50;
+  const discountPct = peer.pct != null ? peer.pct : null;
+
+  const sourceBars = (c.sources||[]).map((s,i) => {
+    const allVals = (c.sources).flatMap(x=>[x.b,x.s]);
+    const gMin = Math.min(...allVals)*0.997, gMax = Math.max(...allVals)*1.003;
+    const range = gMax - gMin;
+    const bl = ((s.b-gMin)/range*100).toFixed(1);
+    const sl = ((s.s-gMin)/range*100).toFixed(1);
+    const isBest = s.b === p.bestBuy;
+    return `<div class="source-row">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span class="source-name" style="color:${isBest?'var(--mid)':'var(--text-lo)'};font-weight:${isBest?700:400}">
+          ${isBest?'<span style="color:var(--mid);font-size:9px">★</span>':''} ${s.n}
+        </span>
+        <div class="source-prices">
+          <span style="color:var(--buy)">₹${fmtINR(s.b)}</span>
+          <span style="color:var(--border)">│</span>
+          <span style="color:var(--sell)">₹${fmtINR(s.s)}</span>
+        </div>
+      </div>
+      <div class="source-bar-track">
+        <div class="source-bar-fill" style="left:${bl}%;width:${sl-bl}%;animation-delay:${i*0.08}s"></div>
+        <div class="source-marker" style="left:${bl}%;background:var(--buy)"></div>
+        <div class="source-marker" style="left:${sl}%;background:var(--sell)"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="expanded-panel">
+    <div class="detail-grid">
+      <div>
+        <div class="anchor-box">
+          <div class="section-label">Anchor Point Aggregator</div>
+          <div class="anchor-grid">
+            <div class="anchor-cell">
+              <div class="anchor-cell-label">Floor Buy</div>
+              <div class="anchor-cell-val" style="color:var(--buy)">₹${fmtINR(p.bestBuy)}</div>
+              <div class="anchor-cell-note">Best available</div>
+            </div>
+            <div class="anchor-cell">
+              <div class="anchor-cell-label">Consensus</div>
+              <div class="anchor-cell-val" style="color:var(--mid)">₹${fmtINR(p.midConsensus)}</div>
+              <div class="anchor-cell-note">Avg of all 5</div>
+            </div>
+            <div class="anchor-cell">
+              <div class="anchor-cell-label">Ceiling</div>
+              <div class="anchor-cell-val" style="color:var(--sell)">₹${fmtINR(p.maxSell)}</div>
+              <div class="anchor-cell-note">Highest sell</div>
+            </div>
+          </div>
+          <div class="gradient-bar">
+            <div class="consensus-dot" style="left:${conPos}%"></div>
+          </div>
+          <div class="bar-labels">
+            <span>${p.spread}% avg spread</span>
+            <span>${p.variance}% price variance</span>
+          </div>
+        </div>
+        <div class="meta-grid">
+          ${[
+            ['ISIN', c.isin],
+            ['Face Value', `₹${c.faceValue}`],
+            ['Lot Size', `${c.lotSize} shares`],
+            ['Min. Investment', `₹${fmtINR(c.sources?.[0]?.b * c.lotSize)}`],
+            ['Listed Peer', c.peer || 'None'],
+            ['Peer Price', c.peerPx ? `₹${fmtINR(c.peerPx)}` : '—'],
+          ].map(([k,v]) => `
+            <div class="meta-item">
+              <div class="meta-key">${k}</div>
+              <div class="meta-val" style="font-family:${['ISIN','Face Value','Peer Price'].includes(k)?'var(--font-mono)':'var(--font-body)'}">${v}</div>
+            </div>
+          `).join('')}
+        </div>
+        ${discountPct != null ? `
+          <div class="peer-banner" style="background:${discountPct<0?'#22C55E12':'#F43F5E12'};border:1px solid ${discountPct<0?'#22C55E30':'#F43F5E30'};margin-top:8px">
+            <div>
+              <div style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:3px">vs ${c.peer} (${c.peerTick})</div>
+              <div style="font-size:13px;color:${discountPct<0?'var(--buy)':'var(--sell)'};font-weight:700">
+                ${discountPct<0?'▼ ':'▲ '}${Math.abs(discountPct).toFixed(1)}% ${discountPct<0?'discount to listed':'premium over listed'}
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:9px;color:var(--dim);margin-bottom:2px">Peer listed at</div>
+              <div style="font-size:14px;color:var(--text);font-family:var(--font-mono)">₹${fmtINR(c.peerPx)}</div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+      <div>
+        <div class="anchor-box">
+          <div class="section-label">Source Comparison</div>
+          <div class="source-bars">${sourceBars}</div>
+        </div>
+        <div class="about-box">
+          <div class="section-label">About</div>
+          <p class="about-text">${c.desc}</p>
+        </div>
+        <div class="range-box">
+          <div class="section-label">52-Week Range</div>
+          <div class="range-bar-wrap">
+            <div class="range-bar" style="position:relative">
+              <div class="range-dot" style="left:${rangePos}%"></div>
+            </div>
+            <div class="range-labels">
+              <span>₹${fmtINR(c.lo52)}</span>
+              <span style="color:var(--text-lo)">52W</span>
+              <span>₹${fmtINR(c.hi52)}</span>
+            </div>
+          </div>
+        </div>
+        <!-- OTC CTA in expanded panel -->
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="action-btn btn-buy" style="flex:1;padding:12px;font-size:13px"
+            onclick="openInquiry('${c._id}','${c.name}','buy',${p.bestBuy||0},${p.bestSell||0},${p.midConsensus||0})">
+            ▲ Get Better Buy Price
+          </button>
+          <button class="action-btn btn-sell" style="flex:1;padding:12px;font-size:13px"
+            onclick="openInquiry('${c._id}','${c.name}','sell',${p.bestBuy||0},${p.bestSell||0},${p.midConsensus||0})">
+            ▼ Get Better Sell Price
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleExpand(id) {
+  expandedId = expandedId === id ? null : id;
+  renderCompanies();
+  if (expandedId) {
+    setTimeout(() => {
+      document.getElementById('card-' + id)?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }, 50);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OTC INQUIRY MODAL
+// ═══════════════════════════════════════════════════════════════
+let inquiryContext = {};
+
+function openInquiry(companyId, companyName, type, bestBuy, bestSell, consensus) {
+  inquiryContext = { companyId, companyName, type, bestBuy, bestSell, consensus };
+  renderModalForm();
+  document.getElementById('inquiryModal').classList.add('open');
+}
+
+function renderModalForm() {
+  const { companyName, type, bestBuy, bestSell, consensus } = inquiryContext;
+  const isBuy = type === 'buy';
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">${companyName}</div>
+        <div class="modal-subtitle">OTC ${isBuy ? 'Buy' : 'Sell'} Inquiry — Get a better price than market</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-type-row">
+      <div class="type-btn ${isBuy?'buy-active':''}" onclick="switchType('buy')">
+        <div class="type-btn-label">▲ BUY</div>
+        <div class="type-btn-sub">I want to buy shares</div>
+      </div>
+      <div class="type-btn ${!isBuy?'sell-active':''}" onclick="switchType('sell')">
+        <div class="type-btn-label">▼ SELL</div>
+        <div class="type-btn-sub">I want to sell shares</div>
+      </div>
+    </div>
+
+    <div class="price-hint">
+      <div class="price-hint-row" style="margin-bottom:6px">
+        <span class="price-hint-label">Market Best Buy</span>
+        <span class="price-hint-val" style="color:var(--buy)">₹${fmtINR(bestBuy)}</span>
+      </div>
+      <div class="price-hint-row" style="margin-bottom:6px">
+        <span class="price-hint-label">Market Best Sell</span>
+        <span class="price-hint-val" style="color:var(--sell)">₹${fmtINR(bestSell)}</span>
+      </div>
+      <div class="price-hint-row">
+        <span class="price-hint-label">Consensus Price</span>
+        <span class="price-hint-val" style="color:var(--mid)">₹${fmtINR(consensus)}</span>
+      </div>
+      <div style="font-size:10px;color:var(--dim);margin-top:10px;line-height:1.6">
+        💡 Leave your details below. Our OTC desk will call you back and try to match you at a <strong style="color:${isBuy?'var(--buy)':'var(--sell)'}">better ${isBuy?'buy':'sell'} price</strong> than the current market.
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Your Name *</label>
+        <input class="form-input" id="iq-name" placeholder="Rahul Sharma" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number *</label>
+        <input class="form-input" id="iq-phone" type="tel" placeholder="+91 98765 43210" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quantity (shares)</label>
+        <input class="form-input" id="iq-qty" type="number" placeholder="100" min="1" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target Price (₹)</label>
+        <input class="form-input" id="iq-price" type="number" placeholder="${isBuy ? Math.round(bestBuy*0.98) : Math.round(bestSell*1.02)}" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Message (optional)</label>
+      <textarea class="form-input" id="iq-msg" rows="2" placeholder="Any specific requirements or timing…"></textarea>
+    </div>
+    <button class="submit-btn ${isBuy?'submit-buy':'submit-sell'}" onclick="submitInquiry()">
+      ${isBuy ? '▲ Request Buy — We\'ll Beat the Market' : '▼ Request Sell — We\'ll Beat the Market'}
+    </button>
+    <div style="text-align:center;font-size:10px;color:var(--dim);margin-top:12px;line-height:1.6">
+      🔒 Your number will only be used by our OTC desk. No spam, ever.
+    </div>
+  `;
+}
+
+function switchType(type) {
+  inquiryContext.type = type;
+  renderModalForm();
+}
+
+async function submitInquiry() {
+  const name  = document.getElementById('iq-name').value.trim();
+  const phone = document.getElementById('iq-phone').value.trim();
+  const qty   = document.getElementById('iq-qty').value;
+  const price = document.getElementById('iq-price').value;
+  const msg   = document.getElementById('iq-msg').value.trim();
+
+  if (!name || !phone) { toast('Please enter your name and phone number', 'error'); return; }
+  if (phone.replace(/\D/g,'').length < 10) { toast('Please enter a valid 10-digit phone number', 'error'); return; }
+
+  const btn = document.querySelector('#modalContent .submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const res = await apiPost('/inquiries', {
+      companyId:   inquiryContext.companyId,
+      companyName: inquiryContext.companyName,
+      type:        inquiryContext.type,
+      name, phone,
+      quantity:    qty ? +qty : null,
+      targetPrice: price ? +price : null,
+      message:     msg,
+    });
+
+    if (res.success) {
+      document.getElementById('modalContent').innerHTML = `
+        <div class="modal-success">
+          <div class="success-icon">${inquiryContext.type==='buy'?'📈':'📉'}</div>
+          <div class="success-title">Request Received!</div>
+          <div class="success-msg">
+            Thank you, <strong>${name}</strong>!<br><br>
+            Our OTC desk will call <strong>${phone}</strong> within <strong>2-4 hours</strong> 
+            to discuss a ${inquiryContext.type==='buy'?'better buy price':'better sell price'} 
+            for <strong>${inquiryContext.companyName}</strong>.<br><br>
+            <span style="color:var(--dim)">Market hours: Mon–Fri 9AM–6PM IST</span>
+          </div>
+          <button class="submit-btn submit-buy" style="margin-top:24px;max-width:200px;margin-left:auto;margin-right:auto" onclick="closeModal()">
+            Close
+          </button>
+        </div>
+      `;
+      toast('Inquiry submitted! We\'ll call you back soon.');
+    } else {
+      toast(res.message || 'Failed to submit inquiry', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Try again';
+    }
+  } catch(e) {
+    toast('Network error. Please try again.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Try again';
+  }
+}
+
+function closeModal() {
+  document.getElementById('inquiryModal').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════
+function handleNavAuth() {
+  if (currentUser) { logout(); return; }
+  authMode = 'login';
+  renderAuthForm();
+  showPage('auth');
+}
+
+function renderAuthForm() {
+  const isReg = authMode === 'register';
+  document.getElementById('authTitle').textContent = isReg ? 'Create account' : 'Welcome back';
+  document.getElementById('authSub').textContent = isReg ? 'Join to access watchlist & OTC desk' : 'Sign in to access watchlist & alerts';
+  document.getElementById('nameGroup').style.display = isReg ? 'block' : 'none';
+  document.getElementById('authSubmitBtn').textContent = isReg ? 'Create Account' : 'Sign In';
+  document.getElementById('authToggleText').textContent = isReg ? 'Already have an account? ' : "Don't have an account? ";
+  document.getElementById('authToggleBtn').textContent = isReg ? 'Sign in' : 'Create account';
+  document.getElementById('authError').style.display = 'none';
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  renderAuthForm();
+}
+
+async function submitAuth() {
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const name     = document.getElementById('authName').value.trim();
+  const errEl    = document.getElementById('authError');
+  errEl.style.display = 'none';
+
+  if (!email || !password) { showAuthError('Please fill in all fields'); return; }
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Please wait…';
+
+  try {
+    const endpoint = authMode === 'register' ? '/auth/register' : '/auth/login';
+    const body = authMode === 'register' ? { name, email, password } : { email, password };
+    const res = await apiPost(endpoint, body);
+
+    if (res.success) {
+      token = res.data.token;
+      currentUser = res.data.user;
+      localStorage.setItem('ui_token', token);
+      localStorage.setItem('ui_user', JSON.stringify(currentUser));
+      updateNavAuth();
+      toast(`Welcome${currentUser.name ? ', ' + currentUser.name.split(' ')[0] : ''}! 🎉`);
+      showPage('main');
+    } else {
+      showAuthError(res.message || 'Authentication failed');
+    }
+  } catch(e) {
+    showAuthError('Network error. Is the server running?');
+  }
+
+  btn.disabled = false;
+  btn.textContent = authMode === 'register' ? 'Create Account' : 'Sign In';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function logout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('ui_token');
+  localStorage.removeItem('ui_user');
+  updateNavAuth();
+  showPage('main');
+  toast('Logged out');
+}
+
+function updateNavAuth() {
+  const btn = document.getElementById('navAuthBtn');
+  const adminBtn = document.getElementById('navAdminBtn');
+  if (currentUser) {
+    btn.textContent = 'Logout';
+    btn.className = 'nav-btn';
+    adminBtn.style.display = currentUser.role === 'admin' ? 'block' : 'none';
+  } else {
+    btn.textContent = 'Login';
+    btn.className = 'nav-btn';
+    adminBtn.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════════════════════
+async function loadAdminData() {
+  if (!token || !currentUser || currentUser.role !== 'admin') {
+    showPage('auth'); return;
+  }
+  await Promise.all([loadAdminStats(), loadInquiries(), loadAdminCompanies()]);
+  renderBrokerInputs();
+}
+
+async function loadAdminStats() {
+  const res = await apiGet('/admin/stats');
+  const d = res.data || {};
+  document.getElementById('adminStats').innerHTML = `
+    <div class="admin-stat"><div class="admin-stat-val">${d.companies||0}</div><div class="admin-stat-label">Companies</div></div>
+    <div class="admin-stat"><div class="admin-stat-val" style="color:var(--buy)">${d.inquiries||0}</div><div class="admin-stat-label">OTC Inquiries</div></div>
+    <div class="admin-stat"><div class="admin-stat-val" style="color:var(--cat-startup)">${d.users||0}</div><div class="admin-stat-label">Registered Users</div></div>
+  `;
+}
+
+async function loadInquiries() {
+  const res = await apiGet('/inquiries');
+  const list = res.data || [];
+  const tbody = document.getElementById('inquiriesTable');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--dim)">No inquiries yet</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(inq => `
+    <tr>
+      <td>${new Date(inq.createdAt).toLocaleDateString('en-IN')}</td>
+      <td><span style="color:${inq.type==='buy'?'var(--buy)':'var(--sell)'};font-weight:700">${inq.type.toUpperCase()}</span></td>
+      <td>${inq.companyName}</td>
+      <td>${inq.name}</td>
+      <td><a href="tel:${inq.phone}" style="color:var(--mid)">${inq.phone}</a></td>
+      <td>${inq.quantity || '—'}</td>
+      <td>${inq.targetPrice ? '₹' + fmtINR(inq.targetPrice) : '—'}</td>
+      <td><span class="status-badge status-${inq.status}">${inq.status}</span></td>
+      <td>
+        <select class="action-select" onchange="updateInquiryStatus('${inq._id}',this.value)">
+          <option ${inq.status==='pending'?'selected':''}>pending</option>
+          <option ${inq.status==='contacted'?'selected':''}>contacted</option>
+          <option ${inq.status==='closed'?'selected':''}>closed</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function updateInquiryStatus(id, status) {
+  await apiPatch('/inquiries/' + id, { status });
+  toast('Status updated');
+}
+
+async function loadAdminCompanies() {
+  const res = await apiGet('/companies');
+  const list = res.data || [];
+  document.getElementById('adminCompaniesTable').innerHTML = list.map(c => {
+    const p = c.computed || {};
+    return `<tr>
+      <td style="color:var(--text);font-weight:600">${c.name}</td>
+      <td>${pill(c.category, CAT_COLORS[c.category]||'#6B7280')}</td>
+      <td>${pill(c.ipoStatus, IPO_COLORS[c.ipoStatus]||'#6B7280')}</td>
+      <td style="color:var(--buy);font-family:var(--font-mono)">₹${fmtINR(p.bestBuy)}</td>
+      <td style="color:var(--sell);font-family:var(--font-mono)">₹${fmtINR(p.bestSell)}</td>
+      <td style="color:var(--mid);font-family:var(--font-mono)">₹${fmtINR(p.midConsensus)}</td>
+      <td><button class="nav-btn" onclick="editPrices('${c._id}','${c.name}')">Edit Prices</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function adminTab(name, el) {
+  ['inquiries','companies','addCompany'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+const BROKERS = ['Planify','SharesCart','Altius','WWIPL','UnlistedZone'];
+
+function renderBrokerInputs() {
+  document.getElementById('ac-sources').innerHTML = BROKERS.map(b => `
+    <div class="form-row" style="margin-bottom:8px;align-items:center">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--text-lo);width:100px">${b}</span>
+        <input class="form-input" id="ac-buy-${b}" type="number" placeholder="Buy ₹" style="flex:1" />
+        <input class="form-input" id="ac-sell-${b}" type="number" placeholder="Sell ₹" style="flex:1" />
+      </div>
+    </div>
+  `).join('');
+}
+
+async function submitAddCompany() {
+  const sources = BROKERS.map(b => ({
+    n: b,
+    b: +document.getElementById('ac-buy-'+b).value,
+    s: +document.getElementById('ac-sell-'+b).value,
+  })).filter(s => s.b && s.s);
+
+  if (!document.getElementById('ac-name').value) { toast('Name is required','error'); return; }
+  if (!sources.length) { toast('Enter at least one broker price','error'); return; }
+
+  const body = {
+    name:      document.getElementById('ac-name').value,
+    fullName:  document.getElementById('ac-fullName').value,
+    sector:    document.getElementById('ac-sector').value,
+    category:  document.getElementById('ac-category').value,
+    ipoStatus: document.getElementById('ac-ipoStatus').value,
+    isin:      document.getElementById('ac-isin').value || '—',
+    faceValue: +document.getElementById('ac-faceValue').value,
+    lotSize:   +document.getElementById('ac-lotSize').value,
+    hi52:      +document.getElementById('ac-hi52').value,
+    lo52:      +document.getElementById('ac-lo52').value,
+    peer:      document.getElementById('ac-peer').value,
+    peerTick:  document.getElementById('ac-peerTick').value,
+    peerPx:    +document.getElementById('ac-peerPx').value,
+    desc:      document.getElementById('ac-desc').value,
+    sources,
+  };
+
+  const res = await apiPost('/companies', body);
+  if (res.success) {
+    toast('Company added!');
+    loadMarket();
+    loadAdminCompanies();
+  } else {
+    toast(res.message || 'Failed to add', 'error');
+  }
+}
+
+function editPrices(id, name) {
+  const prices = {};
+  const modal = document.getElementById('inquiryModal');
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Edit Prices — ${name}</div>
+        <div class="modal-subtitle">Update live broker prices</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    ${BROKERS.map(b => `
+      <div class="form-row" style="margin-bottom:12px;align-items:center">
+        <span style="font-size:12px;color:var(--text-lo);min-width:90px">${b}</span>
+        <div class="form-group" style="margin-bottom:0;flex:1">
+          <label class="form-label">Buy</label>
+          <input class="form-input" id="ep-buy-${b}" type="number" placeholder="Buy" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;flex:1">
+          <label class="form-label">Sell</label>
+          <input class="form-input" id="ep-sell-${b}" type="number" placeholder="Sell" />
+        </div>
+      </div>
+    `).join('')}
+    <button class="submit-btn submit-buy" onclick="savePrices('${id}')">Save Prices</button>
+  `;
+  modal.classList.add('open');
+}
+
+async function savePrices(id) {
+  const sources = BROKERS.map(b => ({
+    n: b,
+    b: +document.getElementById('ep-buy-'+b).value,
+    s: +document.getElementById('ep-sell-'+b).value,
+  })).filter(s => s.b && s.s);
+
+  const res = await apiPatch('/companies/'+id+'/prices', { sources });
+  if (res.success) {
+    closeModal();
+    toast('Prices updated!');
+    loadMarket();
+    loadAdminCompanies();
+  } else {
+    toast(res.message || 'Failed', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DISCLAIMER
+// ═══════════════════════════════════════════════════════════════
+function renderDisclaimer() {
+  const list = document.getElementById('companiesList');
+  list.insertAdjacentHTML('afterend', `
+    <div class="disclaimer" style="margin:0 32px 40px">
+      <span style="color:var(--dim)">⚠ Disclaimer: </span>
+      Prices are indicative and aggregated from Planify, SharesCart, Altius Investech, WWIPL, and UnlistedZone.
+      Unlisted shares carry higher risk. This is not investment advice. Consult a SEBI-registered advisor.
+      OTC desk contact is for price discovery only — not a solicitation to trade.
+    </div>
+  `);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+    e.preventDefault();
+    document.getElementById('searchInput')?.focus();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+updateNavAuth();
+loadMarket().then(renderDisclaimer);
+</script>
+</body>
+</html>
